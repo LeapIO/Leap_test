@@ -1,0 +1,10 @@
+
+rw=sw, qd=4, bs=4k, num=1, 624MB/s, 152k, 25919.93 nsec
+rw=sw, qd=4, bs=8k, num=1, 821MB/s, 100k, 39.47 usec
+rw=sw, qd=4, bs=16k, num=1, 991MB/s, 60.5k, 65642.05 nsec
+rw=sw, qd=4, bs=32k, num=1, 1056MB/s, 32.2k, 123.36 usec
+rw=sw, qd=4, bs=64k, num=1, 1023MB/s, 15.6k, 254.49 usec
+rw=sw, qd=4, bs=128k, num=1, 1107MB/s, 8445, 470.46 usec
+rw=sw, qd=4, bs=256k, num=1, 1123MB/s, 4284, 927.97 usec
+rw=sw, qd=4, bs=1024k, num=1, 1126MB/s, 1073, 3714.61 usec
+rw=sw, qd=4, bs=192K, num=1, 1119MB/s, 5689, 699.26 usec

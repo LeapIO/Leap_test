@@ -1,0 +1,7 @@
+
+rw=sw, qd=1, bs=256K, num=1, 687MB/s, 2620, 376.32 usec
+rw=sw, qd=4, bs=256K, num=1, 1120MB/s, 4271, 931.33 usec
+rw=sw, qd=8, bs=256K, num=1, 1126MB/s, 4293, 1858.72 usec
+rw=sw, qd=32, bs=256K, num=1, 1120MB/s, 4271, 7478.07 usec
+rw=sw, qd=64, bs=256K, num=1, 1124MB/s, 4289, 14900.32 usec
+rw=sw, qd=256, bs=256K, num=1, 1120MB/s, 4271, 59.69 msec

@@ -1,0 +1,109 @@
+#!/bin/bash
+
+mode=$1
+shift
+output_format=normal,json+
+FILENAME=$1
+DISK_MODEL=$2
+SIZE=$3
+QD=$4
+BS=$5
+NUMJOBS=$6
+RW_MODE=$7
+if [ "$RW_MODE" = "sw" ] || [ "$RW_MODE" = "rw" ]; then
+  RW_MODE_FUL="write:"
+elif [ "$RW_MODE" = "sr" ] || [ "$RW_MODE" = "rr" ]; then
+  RW_MODE_FUL="read:"
+fi
+
+case "$mode" in
+    1)
+        required_args=3
+        if [ $# -ne $((required_args-1)) ]; then
+            echo "快速性能曲线测试, ERROR: 模式 $mode 需要 $required_args 个参数"
+            echo "用法: $0 <test_mode> <filename> <disk_model>"
+            exit 1
+        else
+            echo "开始$mode 测试: 快速性能曲线测试"
+            ./scripts/fast_get_perf_curve.sh "$@" > /tmp/exec1_log
+            python3 plot.py data/curve curve
+        fi
+        ;;
+    2)
+        required_args=8
+        if [ $# -ne $((required_args-1)) ]; then
+            echo "固定参数测试, ERROR: 模式 $mode 需要 $required_args 个参数"
+            ## ./leap_test 2 filename disk_model qd numjobs bs size rw
+            echo "用法: $0 <test_mode> <filename> <disk_model> <size> <qd> <bs> <numjobs> <rw>"
+            exit 1
+        else
+            echo "开始$mode 测试: 固定参数测试"
+            runtime=3000
+            ./scripts/fio_standard.sh $FILENAME $RW_MODE $SIZE $QD $NUMJOBS $BS $DISK_MODEL $output_format $runtime > /tmp/exec2_log
+            echo -n "rw=$RW_MODE, qd=$QD, bs=$BS, num=$NUMJOBS, " 
+            #提取BW
+            cat test_result/fio-3.28-$DISK_MODEL-$RW_MODE-$SIZE-qd$QD-num$NUMJOBS-$BS-$runtime-WT.txt \
+            | grep "$RW_MODE_FUL" | awk -F '[()]' '{print $2}' | tr -d '\n' 
+            echo -n ", " 
+            #提取IOPS
+            cat test_result/fio-3.28-$DISK_MODEL-$RW_MODE-$SIZE-qd$QD-num$NUMJOBS-$BS-$runtime-WT.txt \
+            | grep "$RW_MODE_FUL" | sed -n 's/.*IOPS=\([^,]*\),.*/\1/p' | tr -d '\n' 
+            echo -n ", " 
+            #./leap_test 31 /dev/sda 4R5J0001 1G 1024K 1 sw
+            cat test_result/fio-3.28-$DISK_MODEL-$RW_MODE-$SIZE-qd$QD-num$NUMJOBS-$BS-$runtime-WT.txt \
+                | grep "lat (" | sed -n '3p' |awk '{ match($0, /lat \(([^)]+)\).*avg=([0-9.]+)[, ]/, m);
+                print m[2], m[1]}' | tr -d '\n' 
+            echo  
+        fi
+        ;;
+    3[1-3])
+        required_args=7
+        if [ $# -ne $((required_args-1)) ]; then
+            echo "单参数遍历测试, ERROR: 模式 $mode 需要 $required_args 个参数"
+            echo "用法: $0 <test_mode> <filename> <disk_model> <size> <bs> <numjobs> <rw>"
+            echo " or: $0 <test_mode> <filename> <disk_model> <size> <qd> <numjobs> <rw>"
+            echo " or: $0 <test_mode> <filename> <disk_model> <size> <qd> <bs> <rw>"
+            exit 1
+        else
+            echo "开始$mode 测试: 单参数遍历测试"
+            ./scripts/single_loop.sh "$mode" "$@" > /tmp/exec${mode}_log
+        fi
+        ;;
+    4)
+        ## ./leap_test 4 filename disk_model size qd bs numjobs rw runtime
+        required_args=9
+        if [ $# -lt $((required_args-1)) ]; then
+            echo "压测, ERROR: 模式 $mode 需要 $required_args 个参数"
+            echo "用法: $0 <test_mode> <filename> <disk_model> <size> <qd> <bs> <numjobs> <rw> <runtime>"
+            exit 1
+        else
+            echo "开始$mode 测试: 压测"
+            RUNTIME=$8
+            ./scripts/fio_standard.sh $FILENAME $RW_MODE $SIZE $QD $NUMJOBS $BS $DISK_MODEL $output_format $RUNTIME > /tmp/exec4_log
+        fi
+        ;;
+    5)
+        required_args=8
+        if [ $# -lt $((required_args-1)) ]; then
+            echo "其他测试, ERROR: 模式 $mode 需要 $required_args 个参数，实际 $# 个"
+            echo "TO DO~"
+            exit 1
+        else
+            echo "开始$mode 测试: 其他测试, TO DO~"
+            #./fast_get_perf_curve.sh "$@"
+        fi
+        ;;
+    *)
+        echo "测试模式错误: $mode"
+        echo "用法: $0 <test_mode> <filename> <disk_model> ..."
+        echo "mode  1 : 快速性能曲线测试"
+        echo "mode  2 : 固定参数测试"
+        echo "mode 31 : 只遍历qd参数测试, qd = 1 4 8 32 64 256"
+        echo "mode 32 : 只遍历bs参数测试, bs = 4K 8K 16K 32K 64K 128K 256K 1024K"
+        echo "mode 33 : 只遍历numjobs参数测试, numjobs = 1 4 16 32"
+        echo "mode  4 : 压测"
+        echo "mode  5 : 其他测试 TO DO~" 
+        exit 1
+        ;;
+esac
+echo "Test-mode $mode Over!"
